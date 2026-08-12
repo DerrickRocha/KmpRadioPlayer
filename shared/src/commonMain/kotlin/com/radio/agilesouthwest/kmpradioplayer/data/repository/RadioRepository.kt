@@ -21,6 +21,11 @@ class RadioRepository(
             runCatching { apiService.getAllTags(limit, offset) }
         }
 
+    suspend fun searchTags(tag: String, limit: Int = 20, offset: Int = 0): Result<List<NetworkTag>> =
+        withContext(dispatcher) {
+            runCatching { apiService.searchTags(tag, limit, offset) }
+        }
+
     suspend fun searchStations(
         tag: String = "",
         name: String = "",

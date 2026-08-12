@@ -4,14 +4,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.radio.agilesouthwest.kmpradioplayer.data.network.models.NetworkTag
 import com.radio.agilesouthwest.kmpradioplayer.data.repository.RadioRepository
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 
 data class TagsUiState(
     val tags: List<NetworkTag> = emptyList(),
+    val searchQuery: String = "",
     val isLoading: Boolean = false,
     val error: String? = null,
     val endReached: Boolean = false
@@ -24,9 +23,23 @@ class TagsViewModel(private val repository: RadioRepository) : ViewModel() {
 
     private var currentOffset = 0
     private val limit = 20
+    private var searchJob: Job? = null
 
     init {
         loadNextPage()
+    }
+
+    fun onSearchQueryChange(query: String) {
+        if (_uiState.value.searchQuery == query) return
+        
+        _uiState.update { it.copy(searchQuery = query, tags = emptyList(), endReached = false) }
+        currentOffset = 0
+        
+        searchJob?.cancel()
+        searchJob = viewModelScope.launch {
+            delay(300)
+            loadNextPage()
+        }
     }
 
     fun loadNextPage() {
@@ -35,8 +48,14 @@ class TagsViewModel(private val repository: RadioRepository) : ViewModel() {
         _uiState.update { it.copy(isLoading = true, error = null) }
 
         viewModelScope.launch {
-            repository.getAllTags(limit = limit, offset = currentOffset)
-                .onSuccess { newTags ->
+            val query = _uiState.value.searchQuery
+            val result = if (query.isBlank()) {
+                repository.getAllTags(limit = limit, offset = currentOffset)
+            } else {
+                repository.searchTags(tag = query, limit = limit, offset = currentOffset)
+            }
+
+            result.onSuccess { newTags ->
                     _uiState.update { state ->
                         state.copy(
                             tags = state.tags + newTags,

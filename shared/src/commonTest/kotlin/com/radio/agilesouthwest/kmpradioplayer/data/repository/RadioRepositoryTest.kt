@@ -30,6 +30,11 @@ class RadioRepositoryTest {
             return tags
         }
 
+        override suspend fun searchTags(tag: String, limit: Int, offset: Int): List<NetworkTag> {
+            if (shouldFail) throw Exception("Network error")
+            return tags
+        }
+
         override suspend fun searchStations(tag: String, name: String, language: String, limit: Int, offset: Int): List<NetworkRadioStation> {
             if (shouldFail) throw Exception("Network error")
             return stations
