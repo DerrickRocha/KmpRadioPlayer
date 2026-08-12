@@ -4,11 +4,13 @@ import com.radio.agilesouthwest.kmpradioplayer.data.network.RadioApiService
 import com.radio.agilesouthwest.kmpradioplayer.data.network.models.NetworkRadioStation
 import com.radio.agilesouthwest.kmpradioplayer.data.network.models.NetworkTag
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
 import kotlinx.coroutines.withContext
 
 class RadioRepository(
     private val apiService: RadioApiService,
-    private val dispatcher: CoroutineDispatcher
+    private val dispatcher: CoroutineDispatcher = Dispatchers.IO
 ) {
 
     suspend fun getStationsByTag(tag: String, limit: Int = 20, offset: Int = 0): Result<List<NetworkRadioStation>> =
