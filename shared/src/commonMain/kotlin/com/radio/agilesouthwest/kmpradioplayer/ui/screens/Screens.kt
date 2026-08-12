@@ -126,8 +126,10 @@ fun StationsScreen(
 
     val shouldLoadMore = remember {
         derivedStateOf {
+            val totalItems = uiState.stations.size
             val lastVisibleItemIndex = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1
-            lastVisibleItemIndex >= uiState.stations.size - 5
+
+            totalItems > 0 && !uiState.isLoading && uiState.error == null && lastVisibleItemIndex >= totalItems - 5
         }
     }
 
@@ -137,7 +139,17 @@ fun StationsScreen(
         }
     }
 
+    val fallbackPainter = rememberVectorPainter(Icons.Default.Radio)
+
     Box(modifier = Modifier.fillMaxSize()) {
+        if (uiState.stations.isEmpty() && !uiState.isLoading && uiState.error == null) {
+            Text(
+                text = "No Stations Found",
+                modifier = Modifier.align(Alignment.Center),
+                style = MaterialTheme.typography.bodyLarge
+            )
+        }
+
         LazyColumn(
             state = listState,
             modifier = Modifier.fillMaxSize(),
@@ -164,8 +176,8 @@ fun StationsScreen(
                                 .size(48.dp)
                                 .clip(MaterialTheme.shapes.small),
                             contentScale = ContentScale.Crop,
-                            placeholder = rememberVectorPainter(Icons.Default.Radio),
-                            error = rememberVectorPainter(Icons.Default.Radio)
+                            placeholder = fallbackPainter,
+                            error = fallbackPainter
                         )
                         Spacer(modifier = Modifier.width(16.dp))
                         Column(modifier = Modifier.weight(1f)) {
@@ -174,7 +186,7 @@ fun StationsScreen(
                                 style = MaterialTheme.typography.titleMedium
                             )
                             Text(
-                                text = station.tags ?: "",
+                                text = station.tags.orEmpty(),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 maxLines = 1
