@@ -3,12 +3,17 @@ package com.radio.agilesouthwest.kmpradioplayer.data.repository
 import com.radio.agilesouthwest.kmpradioplayer.data.network.RadioApiService
 import com.radio.agilesouthwest.kmpradioplayer.data.network.models.NetworkRadioStation
 import com.radio.agilesouthwest.kmpradioplayer.data.network.models.NetworkTag
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class RadioRepositoryTest {
+
+    private val testDispatcher = UnconfinedTestDispatcher()
 
     private class FakeRadioApiService : RadioApiService {
         var shouldFail = false
@@ -21,6 +26,11 @@ class RadioRepositoryTest {
         }
 
         override suspend fun getAllTags(limit: Int, offset: Int): List<NetworkTag> {
+            if (shouldFail) throw Exception("Network error")
+            return tags
+        }
+
+        override suspend fun searchTags(tag: String, limit: Int, offset: Int): List<NetworkTag> {
             if (shouldFail) throw Exception("Network error")
             return tags
         }
@@ -39,7 +49,7 @@ class RadioRepositoryTest {
     @Test
     fun `getStationsByTag should return success Result`() = runTest {
         val fakeApi = FakeRadioApiService()
-        val repository = RadioRepository(fakeApi)
+        val repository = RadioRepository(fakeApi, testDispatcher)
         
         val result = repository.getStationsByTag("rock")
         
@@ -50,7 +60,7 @@ class RadioRepositoryTest {
     @Test
     fun `getStationsByTag should return failure Result when API fails`() = runTest {
         val fakeApi = FakeRadioApiService().apply { shouldFail = true }
-        val repository = RadioRepository(fakeApi)
+        val repository = RadioRepository(fakeApi, testDispatcher)
 
         val result = repository.getStationsByTag("rock")
 

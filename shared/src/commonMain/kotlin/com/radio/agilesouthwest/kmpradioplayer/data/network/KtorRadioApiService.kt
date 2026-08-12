@@ -23,6 +23,13 @@ class KtorRadioApiService(private val httpClient: HttpClient) : RadioApiService 
         }.body()
     }
 
+    override suspend fun searchTags(tag: String, limit: Int, offset: Int): List<NetworkTag> {
+        return httpClient.get("radio/tags/search/$tag") {
+            parameter("limit", limit)
+            parameter("offset", offset)
+        }.body()
+    }
+
     override suspend fun searchStations(
         tag: String,
         name: String,
