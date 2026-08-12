@@ -11,6 +11,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.toRoute
 import com.radio.agilesouthwest.kmpradioplayer.ui.navigation.RadioDestination
 import com.radio.agilesouthwest.kmpradioplayer.ui.screens.FavoritesScreen
 import com.radio.agilesouthwest.kmpradioplayer.ui.screens.StationsScreen
@@ -25,7 +26,7 @@ fun MainScreen() {
 
     val destinations = listOf(
         RadioDestination.Tags,
-        RadioDestination.Stations,
+        RadioDestination.Stations(),
         RadioDestination.Favorites
     )
 
@@ -50,7 +51,12 @@ fun MainScreen() {
                     NavigationBarItem(
                         selected = selected,
                         onClick = {
-                            navController.navigate(destination) {
+                            val route = if (destination is RadioDestination.Stations) {
+                                RadioDestination.Stations()
+                            } else {
+                                destination
+                            }
+                            navController.navigate(route) {
                                 popUpTo(navController.graph.findStartDestination().id) {
                                     saveState = true
                                 }
@@ -71,10 +77,13 @@ fun MainScreen() {
             modifier = Modifier.padding(innerPadding)
         ) {
             composable<RadioDestination.Tags> {
-                TagsScreen()
+                TagsScreen(onTagClick = { tagName ->
+                    navController.navigate(RadioDestination.Stations(tagName))
+                })
             }
-            composable<RadioDestination.Stations> {
-                StationsScreen()
+            composable<RadioDestination.Stations> { backStackEntry ->
+                val stations: RadioDestination.Stations = backStackEntry.toRoute()
+                StationsScreen(tagName = stations.tagName)
             }
             composable<RadioDestination.Favorites> {
                 FavoritesScreen()

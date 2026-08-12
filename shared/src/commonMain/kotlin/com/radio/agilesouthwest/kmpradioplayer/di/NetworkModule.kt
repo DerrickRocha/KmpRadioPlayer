@@ -3,6 +3,7 @@ package com.radio.agilesouthwest.kmpradioplayer.di
 import com.radio.agilesouthwest.kmpradioplayer.data.network.KtorRadioApiService
 import com.radio.agilesouthwest.kmpradioplayer.data.network.RadioApiService
 import com.radio.agilesouthwest.kmpradioplayer.data.repository.RadioRepository
+import com.radio.agilesouthwest.kmpradioplayer.ui.screens.stations.StationsViewModel
 import com.radio.agilesouthwest.kmpradioplayer.ui.screens.tags.TagsViewModel
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
@@ -44,6 +45,7 @@ val networkModule = module {
     single { RadioRepository(get(), get(named("ioDispatcher"))) }
     
     factory { TagsViewModel(get()) }
+    factory { (tagName: String?) -> StationsViewModel(get(), tagName) }
 }
 
 fun initKoin(appDeclaration: KoinAppDeclaration = {}) =

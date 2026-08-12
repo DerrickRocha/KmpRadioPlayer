@@ -61,6 +61,10 @@ kotlin {
             implementation(libs.kotlinx.serialization.json)
             implementation(libs.kotlinx.coroutines.core)
             
+            // Coil
+            implementation(libs.coil.compose)
+            implementation(libs.coil.network.ktor3)
+            
             // DI
             implementation(libs.koin.core)
             implementation(libs.koin.compose)
