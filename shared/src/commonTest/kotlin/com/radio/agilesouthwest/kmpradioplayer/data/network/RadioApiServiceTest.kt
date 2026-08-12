@@ -29,7 +29,7 @@ class RadioApiServiceTest {
         )
         
         val mockEngine = MockEngine { request ->
-            assertEquals("/Radio/stations/rock", request.url.encodedPath)
+            assertEquals("/radio/stations/rock", request.url.encodedPath)
             assertEquals("20", request.url.parameters["limit"])
             assertEquals("0", request.url.parameters["offset"])
             
@@ -59,7 +59,7 @@ class RadioApiServiceTest {
         )
 
         val mockEngine = MockEngine { request ->
-            assertEquals("/Radio/tags/all", request.url.encodedPath)
+            assertEquals("/radio/tags/all", request.url.encodedPath)
             
             respond(
                 content = json.encodeToString(mockTags),
