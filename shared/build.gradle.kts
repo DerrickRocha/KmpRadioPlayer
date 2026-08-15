@@ -79,6 +79,8 @@ kotlin {
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.compose.uiTooling)
             implementation(libs.ktor.client.okhttp)
+            implementation(libs.media3.exoplayer)
+            implementation(libs.media3.session)
         }
         
         val iosMain by creating {
