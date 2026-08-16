@@ -97,6 +97,12 @@ class AndroidRadioPlayer(context: Context) : RadioPlayer {
         exoPlayer.seekTo(exoPlayer.currentPosition - 5000)
     }
 
+    override fun release() {
+        stopProgressUpdate()
+        exoPlayer.release()
+        _state.update { PlaybackState() }
+    }
+
     private fun startProgressUpdate() {
         progressJob?.cancel()
         progressJob = scope.launch {

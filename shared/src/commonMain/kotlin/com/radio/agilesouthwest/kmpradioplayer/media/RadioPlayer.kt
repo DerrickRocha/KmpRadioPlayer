@@ -13,7 +13,7 @@ data class PlaybackState(
     val error: String? = null
 )
 
-interface RadioPlayer {
+interface RadioPlayer : AutoCloseable {
     val state: StateFlow<PlaybackState>
     
     fun play(station: NetworkRadioStation)
@@ -24,4 +24,7 @@ interface RadioPlayer {
     fun stop()
     fun skipForward()
     fun skipBackward()
+    fun release()
+
+    override fun close() = release()
 }

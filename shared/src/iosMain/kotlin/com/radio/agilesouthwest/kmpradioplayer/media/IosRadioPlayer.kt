@@ -31,7 +31,6 @@ class IosRadioPlayer : RadioPlayer {
         
         player.replaceCurrentItemWithPlayerItem(playerItem)
         player.play()
-        
         // Simplified state management for KMP implementation
         _state.update { it.copy(isPlaying = true, isLoading = false, isSeekable = false) }
         startProgressUpdate()
@@ -73,6 +72,13 @@ class IosRadioPlayer : RadioPlayer {
     override fun skipBackward() {
         val current = CMTimeGetSeconds(player.currentTime())
         seekTo(((current - 5) * 1000).toLong())
+    }
+
+    override fun release() {
+        stopProgressUpdate()
+        player.pause()
+        player.replaceCurrentItemWithPlayerItem(null)
+        _state.update { PlaybackState() }
     }
 
     private fun startProgressUpdate() {
