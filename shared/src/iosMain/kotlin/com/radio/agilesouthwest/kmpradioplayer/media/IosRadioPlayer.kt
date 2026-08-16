@@ -12,7 +12,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import platform.AVFoundation.*
 import platform.Foundation.*
-import platform.darwin.NSObject
 import platform.CoreMedia.*
 import kotlinx.cinterop.ExperimentalForeignApi
 
@@ -21,7 +20,7 @@ class IosRadioPlayer : RadioPlayer {
     private val _state = MutableStateFlow(PlaybackState())
     override val state: StateFlow<PlaybackState> = _state.asStateFlow()
 
-    private var player: AVPlayer? = null
+    private val player = AVPlayer()
     private val scope = CoroutineScope(Dispatchers.Main + Job())
     private var progressJob: Job? = null
 
@@ -30,8 +29,8 @@ class IosRadioPlayer : RadioPlayer {
         val url = NSURL.URLWithString(station.urlResolved) ?: return
         val playerItem = AVPlayerItem.playerItemWithURL(url)
         
-        player = AVPlayer.playerWithPlayerItem(playerItem)
-        player?.play()
+        player.replaceCurrentItemWithPlayerItem(playerItem)
+        player.play()
         
         // Simplified state management for KMP implementation
         _state.update { it.copy(isPlaying = true, isLoading = false, isSeekable = false) }
@@ -39,13 +38,13 @@ class IosRadioPlayer : RadioPlayer {
     }
 
     override fun pause() {
-        player?.pause()
+        player.pause()
         _state.update { it.copy(isPlaying = false) }
         stopProgressUpdate()
     }
 
     override fun resume() {
-        player?.play()
+        player.play()
         _state.update { it.copy(isPlaying = true) }
         startProgressUpdate()
     }
@@ -56,23 +55,23 @@ class IosRadioPlayer : RadioPlayer {
 
     override fun seekTo(position: Long) {
         val cmTime = CMTimeMake(position, 1000)
-        player?.seekToTime(cmTime)
+        player.seekToTime(cmTime)
     }
 
     override fun stop() {
-        player?.pause()
-        player = null
+        player.pause()
+        player.replaceCurrentItemWithPlayerItem(null)
         _state.update { PlaybackState() }
         stopProgressUpdate()
     }
 
     override fun skipForward() {
-        val current = player?.currentTime()?.let { CMTimeGetSeconds(it) } ?: 0.0
+        val current = CMTimeGetSeconds(player.currentTime())
         seekTo(((current + 5) * 1000).toLong())
     }
 
     override fun skipBackward() {
-        val current = player?.currentTime()?.let { CMTimeGetSeconds(it) } ?: 0.0
+        val current = CMTimeGetSeconds(player.currentTime())
         seekTo(((current - 5) * 1000).toLong())
     }
 
@@ -80,7 +79,7 @@ class IosRadioPlayer : RadioPlayer {
         progressJob?.cancel()
         progressJob = scope.launch {
             while (true) {
-                val current = player?.currentTime()?.let { CMTimeGetSeconds(it) } ?: 0.0
+                val current = CMTimeGetSeconds(player.currentTime())
                 _state.update { it.copy(currentPosition = (current * 1000).toLong()) }
                 delay(1000)
             }
