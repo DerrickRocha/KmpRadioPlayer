@@ -3,7 +3,11 @@ package com.radio.agilesouthwest.kmpradioplayer.media
 import android.content.Context
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
+import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
+import androidx.annotation.OptIn
+import androidx.media3.common.util.UnstableApi
 import com.radio.agilesouthwest.kmpradioplayer.data.network.models.NetworkRadioStation
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -15,8 +19,18 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
+@OptIn(UnstableApi::class)
 class AndroidRadioPlayer(context: Context) : RadioPlayer {
-    private val exoPlayer = ExoPlayer.Builder(context).build()
+    private val exoPlayer = ExoPlayer.Builder(context)
+        .setMediaSourceFactory(
+            DefaultMediaSourceFactory(context)
+                .setDataSourceFactory(
+                    DefaultHttpDataSource.Factory()
+                        .setUserAgent("KmpRadioPlayer/1.0")
+                        .setAllowCrossProtocolRedirects(true)
+                )
+        )
+        .build()
     private val _state = MutableStateFlow(PlaybackState())
     override val state: StateFlow<PlaybackState> = _state.asStateFlow()
 
