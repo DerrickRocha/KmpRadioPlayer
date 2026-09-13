@@ -3,7 +3,6 @@ package com.radio.agilesouthwest.kmpradioplayer.ui.player
 import androidx.lifecycle.ViewModel
 import com.radio.agilesouthwest.kmpradioplayer.data.network.models.NetworkRadioStation
 import com.radio.agilesouthwest.kmpradioplayer.media.RadioPlayer
-import kotlinx.coroutines.flow.StateFlow
 
 class PlayerViewModel(private val player: RadioPlayer) : ViewModel() {
     val playbackState = player.state

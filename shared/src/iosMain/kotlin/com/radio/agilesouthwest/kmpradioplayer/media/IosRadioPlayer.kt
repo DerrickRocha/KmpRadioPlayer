@@ -13,7 +13,9 @@ import kotlinx.coroutines.launch
 import platform.AVFoundation.*
 import platform.Foundation.*
 import platform.CoreMedia.*
+import platform.MediaPlayer.*
 import kotlinx.cinterop.ExperimentalForeignApi
+import platform.AVFAudio.*
 
 @OptIn(ExperimentalForeignApi::class)
 class IosRadioPlayer : RadioPlayer {
@@ -24,27 +26,97 @@ class IosRadioPlayer : RadioPlayer {
     private val scope = CoroutineScope(Dispatchers.Main + Job())
     private var progressJob: Job? = null
 
+    init {
+        setupRemoteCommands()
+    }
+
+    private fun configureAudioSession() {
+        val session = AVAudioSession.sharedInstance()
+        try {
+            session.setCategory(
+                category = AVAudioSessionCategoryPlayback,
+                withOptions = AVAudioSessionCategoryOptionAllowBluetooth or AVAudioSessionCategoryOptionDefaultToSpeaker,
+                error = null
+            )
+            session.setActive(true, error = null)
+        } catch (e: Exception) {
+            println("Failed to set audio session: ${e.message}")
+        }
+    }
+
+    private fun setupRemoteCommands() {
+        val commandCenter = MPRemoteCommandCenter.sharedCommandCenter()
+
+        commandCenter.playCommand.enabled = true
+        commandCenter.playCommand.addTargetWithHandler {
+            resume()
+            MPRemoteCommandHandlerStatusSuccess
+        }
+
+        commandCenter.pauseCommand.enabled = true
+        commandCenter.pauseCommand.addTargetWithHandler {
+            pause()
+            MPRemoteCommandHandlerStatusSuccess
+        }
+
+        commandCenter.togglePlayPauseCommand.enabled = true
+        commandCenter.togglePlayPauseCommand.addTargetWithHandler {
+            toggle()
+            MPRemoteCommandHandlerStatusSuccess
+        }
+        
+        commandCenter.nextTrackCommand.enabled = true
+        commandCenter.nextTrackCommand.addTargetWithHandler {
+            skipForward()
+            MPRemoteCommandHandlerStatusSuccess
+        }
+        
+        commandCenter.previousTrackCommand.enabled = true
+        commandCenter.previousTrackCommand.addTargetWithHandler {
+            skipBackward()
+            MPRemoteCommandHandlerStatusSuccess
+        }
+    }
+
     override fun play(station: NetworkRadioStation) {
+        configureAudioSession()
         _state.update { it.copy(currentStation = station, error = null, isLoading = true) }
+        
         val url = NSURL.URLWithString(station.urlResolved) ?: return
         val playerItem = AVPlayerItem.playerItemWithURL(url)
         
         player.replaceCurrentItemWithPlayerItem(playerItem)
         player.play()
-        // Simplified state management for KMP implementation
+
+        updateNowPlaying(station, isPlaying = true)
+
         _state.update { it.copy(isPlaying = true, isLoading = false, isSeekable = false) }
         startProgressUpdate()
+    }
+
+    private fun updateNowPlaying(station: NetworkRadioStation, isPlaying: Boolean) {
+        val info = mutableMapOf<String, Any>()
+        info[MPMediaItemPropertyTitle] = station.name
+        info[MPMediaItemPropertyArtist] = station.tags ?: ""
+        info[MPNowPlayingInfoPropertyIsLiveStream] = true
+        info[MPNowPlayingInfoPropertyPlaybackRate] = if (isPlaying) 1.0 else 0.0
+        info[MPNowPlayingInfoPropertyElapsedPlaybackTime] = 0.0 // Reset for live
+        
+        MPNowPlayingInfoCenter.defaultCenter().nowPlayingInfo = info as Map<Any?, *>
     }
 
     override fun pause() {
         player.pause()
         _state.update { it.copy(isPlaying = false) }
+        _state.value.currentStation?.let { updateNowPlaying(it, isPlaying = false) }
         stopProgressUpdate()
     }
 
     override fun resume() {
+        configureAudioSession()
         player.play()
         _state.update { it.copy(isPlaying = true) }
+        _state.value.currentStation?.let { updateNowPlaying(it, isPlaying = true) }
         startProgressUpdate()
     }
 
@@ -79,6 +151,10 @@ class IosRadioPlayer : RadioPlayer {
         player.pause()
         player.replaceCurrentItemWithPlayerItem(null)
         _state.update { PlaybackState() }
+    }
+
+    override fun close() {
+        release()
     }
 
     private fun startProgressUpdate() {

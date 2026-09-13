@@ -13,7 +13,6 @@ import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
-import com.radio.agilesouthwest.kmpradioplayer.media.PlaybackState
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
@@ -31,7 +30,7 @@ fun PlayerSheetContent(
     ) {
         AsyncImage(
             model = station.favicon,
-            contentDescription = null,
+            contentDescription = "Station artwork for ${station.name}",
             modifier = Modifier
                 .size(240.dp)
                 .clip(MaterialTheme.shapes.large),
@@ -56,18 +55,12 @@ fun PlayerSheetContent(
 
         Spacer(modifier = Modifier.height(32.dp))
 
-        if (state.isSeekable) {
-            Slider(
-                value = state.currentPosition.toFloat(),
-                onValueChange = { viewModel.seekTo(it.toLong()) },
-                valueRange = 0f..state.duration.toFloat().coerceAtLeast(1f),
-                modifier = Modifier.fillMaxWidth()
-            )
-        } else {
-            LinearProgressIndicator(
-                modifier = Modifier.fillMaxWidth().height(4.dp).clip(MaterialTheme.shapes.small)
-            )
-        }
+        PlaybackProgress(
+            isSeekable = state.isSeekable,
+            currentPosition = state.currentPosition,
+            duration = state.duration,
+            onSeek = { viewModel.seekTo(it) }
+        )
 
         Spacer(modifier = Modifier.height(24.dp))
 
@@ -79,7 +72,7 @@ fun PlayerSheetContent(
             IconButton(onClick = { viewModel.skipBackward() }) {
                 Icon(
                     imageVector = if (state.isSeekable) Icons.Default.Replay5 else Icons.Default.SkipPrevious,
-                    contentDescription = null,
+                    contentDescription = if (state.isSeekable) "Rewind 5 seconds" else "Previous station",
                     modifier = Modifier.size(32.dp)
                 )
             }
@@ -93,7 +86,7 @@ fun PlayerSheetContent(
                 } else {
                     Icon(
                         imageVector = if (state.isPlaying) Icons.Default.PauseCircle else Icons.Default.PlayCircle,
-                        contentDescription = null,
+                        contentDescription = if (state.isPlaying) "Pause" else "Play",
                         modifier = Modifier.size(64.dp)
                     )
                 }
@@ -102,11 +95,41 @@ fun PlayerSheetContent(
             IconButton(onClick = { viewModel.skipForward() }) {
                 Icon(
                     imageVector = if (state.isSeekable) Icons.Default.Forward5 else Icons.Default.SkipNext,
-                    contentDescription = null,
+                    contentDescription = if (state.isSeekable) "Forward 5 seconds" else "Next station",
                     modifier = Modifier.size(32.dp)
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun PlaybackProgress(
+    isSeekable: Boolean,
+    currentPosition: Long,
+    duration: Long,
+    onSeek: (Long) -> Unit
+) {
+    if (isSeekable) {
+        var sliderPosition by remember { mutableStateOf<Float?>(null) }
+
+        Slider(
+            value = sliderPosition ?: currentPosition.toFloat(),
+            onValueChange = { sliderPosition = it },
+            onValueChangeFinished = {
+                sliderPosition?.let { onSeek(it.toLong()) }
+                sliderPosition = null
+            },
+            valueRange = 0f..duration.toFloat().coerceAtLeast(1f),
+            modifier = Modifier.fillMaxWidth()
+        )
+    } else {
+        LinearProgressIndicator(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(4.dp)
+                .clip(MaterialTheme.shapes.small)
+        )
     }
 }
 
@@ -156,7 +179,7 @@ fun MiniPlayer(
             IconButton(onClick = { viewModel.togglePlayback() }) {
                 Icon(
                     imageVector = if (state.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                    contentDescription = null
+                    contentDescription = if (state.isPlaying) "Pause" else "Play"
                 )
             }
         }
