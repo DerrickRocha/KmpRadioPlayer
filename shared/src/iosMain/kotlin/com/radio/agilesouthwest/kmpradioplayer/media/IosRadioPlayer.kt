@@ -25,9 +25,11 @@ class IosRadioPlayer : RadioPlayer {
     private val player = AVPlayer()
     private val scope = CoroutineScope(Dispatchers.Main + Job())
     private var progressJob: Job? = null
+    private var interruptionObserver: Any? = null
 
     init {
         setupRemoteCommands()
+        setupInterruptionObserver()
     }
 
     private fun configureAudioSession() {
@@ -75,6 +77,26 @@ class IosRadioPlayer : RadioPlayer {
         commandCenter.previousTrackCommand.addTargetWithHandler {
             skipBackward()
             MPRemoteCommandHandlerStatusSuccess
+        }
+    }
+
+    private fun setupInterruptionObserver() {
+        interruptionObserver = NSNotificationCenter.defaultCenter.addObserverForName(
+            name = AVAudioSessionInterruptionNotification,
+            `object` = null,
+            queue = NSOperationQueue.mainQueue
+        ) { notification ->
+            val userInfo = notification?.userInfo ?: return@addObserverForName
+            val typeValue = userInfo[AVAudioSessionInterruptionTypeKey] as? NSNumber ?: return@addObserverForName
+
+            if (typeValue.unsignedLongValue == AVAudioSessionInterruptionTypeBegan) {
+                pause()
+            } else if (typeValue.unsignedLongValue == AVAudioSessionInterruptionTypeEnded) {
+                val optionsValue = userInfo[AVAudioSessionInterruptionOptionKey] as? NSNumber
+                if (optionsValue?.unsignedLongValue == AVAudioSessionInterruptionOptionShouldResume) {
+                    resume()
+                }
+            }
         }
     }
 
@@ -148,6 +170,7 @@ class IosRadioPlayer : RadioPlayer {
 
     override fun release() {
         stopProgressUpdate()
+        interruptionObserver?.let { NSNotificationCenter.defaultCenter.removeObserver(it) }
         player.pause()
         player.replaceCurrentItemWithPlayerItem(null)
         _state.update { PlaybackState() }
