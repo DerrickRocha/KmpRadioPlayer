@@ -26,10 +26,6 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.isActive
 import platform.AVFAudio.*
 
-// NOTE: import list depends on your KMP module's cinterop setup (AVFoundation, MediaPlayer,
-// AVFAudio/AVAudioSession, Foundation, kotlinx.cinterop). Add the ones matching your project;
-// omitted here for brevity since they vary slightly by Kotlin/Native version.
-
 @OptIn(ExperimentalForeignApi::class)
 class IosRadioPlayer : RadioPlayer {
 
@@ -39,15 +35,11 @@ class IosRadioPlayer : RadioPlayer {
     private val player = AVPlayer()
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private var progressJob: Job? = null
-
-    // Notification observer tokens — all must be removed in release(), or NSNotificationCenter
-    // (a process-wide singleton) keeps this instance alive indefinitely.
     private var interruptionObserver: Any? = null
     private var routeChangeObserver: Any? = null
     private var itemFailedObserver: Any? = null
     private var itemStalledObserver: Any? = null
 
-    // Remote command tokens — MPRemoteCommandCenter is also a process-wide singleton.
     private var playCommandTarget: Any? = null
     private var pauseCommandTarget: Any? = null
     private var toggleCommandTarget: Any? = null
@@ -60,10 +52,6 @@ class IosRadioPlayer : RadioPlayer {
         setupRouteChangeObserver()
         setupPlaybackFailureObservers()
     }
-
-    // ---------------------------------------------------------------------
-    // Audio session
-    // ---------------------------------------------------------------------
 
     @OptIn(BetaInteropApi::class)
     private fun configureAudioSession(): Boolean {
@@ -107,10 +95,6 @@ class IosRadioPlayer : RadioPlayer {
         }
     }
 
-    // ---------------------------------------------------------------------
-    // Remote commands
-    // ---------------------------------------------------------------------
-
     private fun setupRemoteCommands() {
         val commandCenter = MPRemoteCommandCenter.sharedCommandCenter()
 
@@ -132,8 +116,6 @@ class IosRadioPlayer : RadioPlayer {
             MPRemoteCommandHandlerStatusSuccess
         }
 
-        // Radio streams generally aren't seekable, so these behave as "skip" only when
-        // isSeekable is true. Consider disabling the commands entirely for pure live radio.
         commandCenter.nextTrackCommand.enabled = true
         nextTrackCommandTarget = commandCenter.nextTrackCommand.addTargetWithHandler {
             skipForward()
@@ -161,10 +143,6 @@ class IosRadioPlayer : RadioPlayer {
         previousTrackCommandTarget = null
     }
 
-    // ---------------------------------------------------------------------
-    // Interruptions / route changes / playback failures
-    // ---------------------------------------------------------------------
-
     private fun setupInterruptionObserver() {
         interruptionObserver = NSNotificationCenter.defaultCenter.addObserverForName(
             name = AVAudioSessionInterruptionNotification,
@@ -179,7 +157,7 @@ class IosRadioPlayer : RadioPlayer {
                 AVAudioSessionInterruptionTypeEnded -> {
                     val options = (userInfo[AVAudioSessionInterruptionOptionKey] as? NSNumber)
                         ?.unsignedLongValue ?: 0uL
-                    // Bitmask, not a single value — must be checked with AND, not equality.
+
                     if (options and AVAudioSessionInterruptionOptionShouldResume != 0uL) {
                         resume()
                     }
@@ -221,8 +199,6 @@ class IosRadioPlayer : RadioPlayer {
             queue = NSOperationQueue.mainQueue
         ) { notification ->
             if (notification?.`object` !== player.currentItem) return@addObserverForName
-            // Stream stalled (e.g. buffering underrun). Reflect it in state; caller can decide
-            // whether to retry, show a spinner, etc.
             _state.update { it.copy(isLoading = true) }
         }
     }
@@ -243,10 +219,6 @@ class IosRadioPlayer : RadioPlayer {
         itemFailedObserver = null
         itemStalledObserver = null
     }
-
-    // ---------------------------------------------------------------------
-    // Playback controls
-    // ---------------------------------------------------------------------
 
     override fun play(station: NetworkRadioStation) {
         _state.update { it.copy(currentStation = station, error = null, isLoading = true) }
@@ -333,10 +305,6 @@ class IosRadioPlayer : RadioPlayer {
     override fun close() {
         release()
     }
-
-    // ---------------------------------------------------------------------
-    // Now playing / progress
-    // ---------------------------------------------------------------------
 
     private fun updateNowPlaying(station: NetworkRadioStation, isPlaying: Boolean) {
         val info: Map<Any?, Any?> = mapOf(
