@@ -38,8 +38,12 @@ fun TagsScreen(
         }
     }
 
+    LaunchedEffect(Unit) {
+        viewModel.loadNextPage() // explicit initial load
+    }
+
     LaunchedEffect(shouldLoadMore.value) {
-        if (shouldLoadMore.value) {
+        if (shouldLoadMore.value && uiState.tags.isNotEmpty()) {
             viewModel.loadNextPage()
         }
     }
