@@ -20,7 +20,6 @@ import com.radio.agilesouthwest.kmpradioplayer.ui.player.PlayerViewModel
 import com.radio.agilesouthwest.kmpradioplayer.ui.screens.FavoritesScreen
 import com.radio.agilesouthwest.kmpradioplayer.ui.screens.StationsScreen
 import com.radio.agilesouthwest.kmpradioplayer.ui.screens.TagsScreen
-import kotlinx.coroutines.launch
 import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -35,11 +34,10 @@ fun MainScreen(
     val playbackState by playerViewModel.playbackState.collectAsState()
     var showFullPlayer by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    val scope = rememberCoroutineScope()
 
     val destinations = listOf(
-        RadioDestination.Tags,
         RadioDestination.Stations(),
+        RadioDestination.Tags,
         RadioDestination.Favorites
     )
 
@@ -48,8 +46,8 @@ fun MainScreen(
             TopAppBar(
                 title = {
                     val title = when {
-                        currentDestination?.hasRoute<RadioDestination.Tags>() == true -> "Tags"
                         currentDestination?.hasRoute<RadioDestination.Stations>() == true -> "Stations"
+                        currentDestination?.hasRoute<RadioDestination.Tags>() == true -> "Tags"
                         currentDestination?.hasRoute<RadioDestination.Favorites>() == true -> "Favorites"
                         else -> "Radio Player"
                     }
@@ -93,7 +91,7 @@ fun MainScreen(
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = RadioDestination.Tags,
+            startDestination = RadioDestination.Stations(),
             modifier = Modifier.padding(innerPadding)
         ) {
             composable<RadioDestination.Tags> {
