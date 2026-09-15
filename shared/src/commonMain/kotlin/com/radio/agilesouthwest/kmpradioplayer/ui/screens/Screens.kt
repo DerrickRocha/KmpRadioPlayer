@@ -17,6 +17,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.radio.agilesouthwest.kmpradioplayer.data.network.models.NetworkRadioStation
+import com.radio.agilesouthwest.kmpradioplayer.ui.player.PlayerViewModel
 import com.radio.agilesouthwest.kmpradioplayer.ui.screens.stations.StationsViewModel
 import com.radio.agilesouthwest.kmpradioplayer.ui.screens.tags.TagsViewModel
 import org.koin.compose.viewmodel.koinViewModel
@@ -130,7 +131,7 @@ fun StationsScreen(
     val uiState by viewModel.uiState.collectAsState()
     
     // Update station list in PlayerViewModel when results load
-    val playerViewModel: com.radio.agilesouthwest.kmpradioplayer.ui.player.PlayerViewModel = koinViewModel()
+    val playerViewModel: PlayerViewModel = koinViewModel()
     LaunchedEffect(uiState.stations) {
         playerViewModel.setStationList(uiState.stations)
     }
