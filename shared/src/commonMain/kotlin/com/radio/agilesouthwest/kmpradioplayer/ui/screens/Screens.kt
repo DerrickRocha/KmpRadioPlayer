@@ -155,90 +155,106 @@ fun StationsScreen(
 
     val fallbackPainter = rememberVectorPainter(Icons.Default.Radio)
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        if (uiState.stations.isEmpty() && !uiState.isLoading && uiState.error == null) {
-            Text(
-                text = "No Stations Found",
-                modifier = Modifier.align(Alignment.Center),
-                style = MaterialTheme.typography.bodyLarge
-            )
-        }
+    Column(modifier = Modifier.fillMaxSize()) {
+        OutlinedTextField(
+            value = uiState.searchQuery,
+            onValueChange = { viewModel.onSearchQueryChange(it) },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            placeholder = { Text("Search stations...") },
+            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+            singleLine = true,
+            shape = MaterialTheme.shapes.medium
+        )
 
-        LazyColumn(
-            state = listState,
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            items(
-                items = uiState.stations,
-                key = { it.stationUuid }
-            ) { station ->
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    onClick = { onStationClick(station) }
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .padding(16.dp)
-                            .fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
+        Box(modifier = Modifier.fillMaxSize()) {
+            if (uiState.stations.isEmpty() && !uiState.isLoading && uiState.error == null) {
+                Text(
+                    text = "No Stations Found",
+                    modifier = Modifier.align(Alignment.Center),
+                    style = MaterialTheme.typography.bodyLarge
+                )
+            }
+
+            LazyColumn(
+                state = listState,
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(
+                    items = uiState.stations,
+                    key = { it.stationUuid }
+                ) { station ->
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        onClick = { onStationClick(station) }
                     ) {
-                        AsyncImage(
-                            model = station.favicon,
-                            contentDescription = null,
+                        Row(
                             modifier = Modifier
-                                .size(48.dp)
-                                .clip(MaterialTheme.shapes.small),
-                            contentScale = ContentScale.Crop,
-                            placeholder = fallbackPainter,
-                            error = fallbackPainter
-                        )
-                        Spacer(modifier = Modifier.width(16.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = station.name,
-                                style = MaterialTheme.typography.titleMedium
+                                .padding(16.dp)
+                                .fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            AsyncImage(
+                                model = station.favicon,
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .size(48.dp)
+                                    .clip(MaterialTheme.shapes.small),
+                                contentScale = ContentScale.Crop,
+                                placeholder = fallbackPainter,
+                                error = fallbackPainter
                             )
+                            Spacer(modifier = Modifier.width(16.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = station.name,
+                                    style = MaterialTheme.typography.titleMedium
+                                )
+                                Text(
+                                    text = station.tags.orEmpty(),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 1
+                                )
+                            }
                             Text(
-                                text = station.tags.orEmpty(),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                maxLines = 1
+                                text = "${station.bitrate} kbps",
+                                style = MaterialTheme.typography.labelSmall
                             )
                         }
+                    }
+                }
+
+                if (uiState.isLoading) {
+                    item {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator()
+                        }
+                    }
+                }
+
+                uiState.error?.let { error ->
+                    item {
                         Text(
-                            text = "${station.bitrate} kbps",
-                            style = MaterialTheme.typography.labelSmall
+                            text = "Error: $error",
+                            color = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.padding(16.dp)
                         )
                     }
-                }
-            }
-
-            if (uiState.isLoading) {
-                item {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator()
-                    }
-                }
-            }
-
-            uiState.error?.let { error ->
-                item {
-                    Text(
-                        text = "Error: $error",
-                        color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.padding(16.dp)
-                    )
                 }
             }
         }
     }
+
+
 }
 
 @Composable

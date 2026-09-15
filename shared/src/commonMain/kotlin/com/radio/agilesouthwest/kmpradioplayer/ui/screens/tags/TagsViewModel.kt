@@ -7,6 +7,7 @@ import com.radio.agilesouthwest.kmpradioplayer.data.repository.RadioRepository
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.*
+import kotlin.time.Duration.Companion.milliseconds
 
 data class TagsUiState(
     val tags: List<NetworkTag> = emptyList(),
@@ -37,7 +38,7 @@ class TagsViewModel(private val repository: RadioRepository) : ViewModel() {
         
         searchJob?.cancel()
         searchJob = viewModelScope.launch {
-            delay(300)
+            delay(300.milliseconds)
             loadNextPage()
         }
     }
