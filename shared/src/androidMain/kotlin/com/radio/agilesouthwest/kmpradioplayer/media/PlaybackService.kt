@@ -1,5 +1,6 @@
 package com.radio.agilesouthwest.kmpradioplayer.media
 
+import android.app.PendingIntent
 import android.content.Intent
 import androidx.annotation.OptIn
 import androidx.media3.common.AudioAttributes
@@ -37,7 +38,17 @@ class PlaybackService : MediaSessionService() {
             )
             .build()
             
-        mediaSession = MediaSession.Builder(this, player!!).build()
+        val intent = packageManager.getLaunchIntentForPackage(packageName)
+        val pendingIntent = PendingIntent.getActivity(
+            this,
+            0,
+            intent,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+
+        mediaSession = MediaSession.Builder(this, player!!)
+            .setSessionActivity(pendingIntent)
+            .build()
     }
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? = mediaSession
