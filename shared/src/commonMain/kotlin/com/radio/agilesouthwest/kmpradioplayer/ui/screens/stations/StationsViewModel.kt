@@ -72,7 +72,7 @@ class StationsViewModel(
     fun onSearchQueryChange(query: String) {
         if (_uiState.value.searchQuery == query) return
 
-        requestGeneration++          // invalidate any in-flight/pending response
+        requestGeneration++
         loadJob?.cancel()
         searchJob?.cancel()
 
@@ -82,7 +82,7 @@ class StationsViewModel(
                 searchQuery = query,
                 stations = emptyList(),
                 endReached = false,
-                isLoading = false,   // <-- important, see next bug
+                isLoading = false,
                 error = null
             )
         }

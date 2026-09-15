@@ -45,7 +45,7 @@ class TagsViewModel(private val repository: RadioRepository) : ViewModel() {
                 searchQuery = query,
                 tags = emptyList(),
                 endReached = false,
-                isLoading = false, // see next bug
+                isLoading = false,
                 error = null
             )
         }
