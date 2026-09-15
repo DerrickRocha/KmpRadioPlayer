@@ -7,6 +7,7 @@ import com.radio.agilesouthwest.kmpradioplayer.data.repository.RadioRepository
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.*
+import kotlin.time.Duration.Companion.milliseconds
 
 data class TagsUiState(
     val tags: List<NetworkTag> = emptyList(),
@@ -24,6 +25,8 @@ class TagsViewModel(private val repository: RadioRepository) : ViewModel() {
     private var currentOffset = 0
     private val limit = 20
     private var searchJob: Job? = null
+    private var loadJob: Job? = null
+    private var requestGeneration = 0
 
     init {
         loadNextPage()
@@ -31,13 +34,24 @@ class TagsViewModel(private val repository: RadioRepository) : ViewModel() {
 
     fun onSearchQueryChange(query: String) {
         if (_uiState.value.searchQuery == query) return
-        
-        _uiState.update { it.copy(searchQuery = query, tags = emptyList(), endReached = false) }
-        currentOffset = 0
-        
+
+        requestGeneration++
+        loadJob?.cancel()
         searchJob?.cancel()
+
+        currentOffset = 0
+        _uiState.update {
+            it.copy(
+                searchQuery = query,
+                tags = emptyList(),
+                endReached = false,
+                isLoading = false,
+                error = null
+            )
+        }
+
         searchJob = viewModelScope.launch {
-            delay(300)
+            delay(300.milliseconds)
             loadNextPage()
         }
     }
@@ -45,9 +59,10 @@ class TagsViewModel(private val repository: RadioRepository) : ViewModel() {
     fun loadNextPage() {
         if (_uiState.value.isLoading || _uiState.value.endReached) return
 
+        val generation = requestGeneration
         _uiState.update { it.copy(isLoading = true, error = null) }
 
-        viewModelScope.launch {
+        loadJob = viewModelScope.launch {
             val query = _uiState.value.searchQuery
             val result = if (query.isBlank()) {
                 repository.getAllTags(limit = limit, offset = currentOffset)
@@ -56,18 +71,19 @@ class TagsViewModel(private val repository: RadioRepository) : ViewModel() {
             }
 
             result.onSuccess { newTags ->
-                    _uiState.update { state ->
-                        state.copy(
-                            tags = state.tags + newTags,
-                            isLoading = false,
-                            endReached = newTags.size < limit
-                        )
-                    }
-                    currentOffset += limit
+                if (generation != requestGeneration) return@onSuccess
+                _uiState.update { state ->
+                    state.copy(
+                        tags = state.tags + newTags,
+                        isLoading = false,
+                        endReached = newTags.size < limit
+                    )
                 }
-                .onFailure { error ->
-                    _uiState.update { it.copy(isLoading = false, error = error.message) }
-                }
+                currentOffset += limit
+            }.onFailure { error ->
+                if (generation != requestGeneration) return@onFailure
+                _uiState.update { it.copy(isLoading = false, error = error.message ?: "Unknown error") }
+            }
         }
     }
 }
