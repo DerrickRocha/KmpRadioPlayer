@@ -55,8 +55,10 @@ class StationsViewModel(
             ).onSuccess { newStations ->
                 if (generation != requestGeneration) return@onSuccess // stale response, discard
                 _uiState.update { state ->
+                    val existingIds = state.stations.mapTo(HashSet()) { it.stationUuid }
+                    val deduped = newStations.filter { it.stationUuid !in existingIds }
                     state.copy(
-                        stations = state.stations + newStations,
+                        stations = state.stations + deduped,
                         isLoading = false,
                         endReached = newStations.size < limit
                     )
@@ -71,7 +73,7 @@ class StationsViewModel(
 
     fun onSearchQueryChange(query: String) {
         if (_uiState.value.searchQuery == query) return
-
+        currentTag = null
         requestGeneration++
         loadJob?.cancel()
         searchJob?.cancel()

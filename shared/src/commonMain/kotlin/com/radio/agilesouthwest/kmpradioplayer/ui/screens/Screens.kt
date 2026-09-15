@@ -253,8 +253,6 @@ fun StationsScreen(
             }
         }
     }
-
-
 }
 
 @Composable
