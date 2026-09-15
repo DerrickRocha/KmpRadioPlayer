@@ -16,6 +16,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import com.radio.agilesouthwest.kmpradioplayer.data.network.models.NetworkRadioStation
 import com.radio.agilesouthwest.kmpradioplayer.ui.screens.stations.StationsViewModel
 import com.radio.agilesouthwest.kmpradioplayer.ui.screens.tags.TagsViewModel
 import org.koin.compose.viewmodel.koinViewModel
@@ -118,10 +119,18 @@ fun TagsScreen(
 
 @Composable
 fun StationsScreen(
+    onStationClick: (NetworkRadioStation) -> Unit,
     tagName: String? = null,
     viewModel: StationsViewModel = koinViewModel(key = tagName) { parametersOf(tagName) }
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    
+    // Update station list in PlayerViewModel when results load
+    val playerViewModel: com.radio.agilesouthwest.kmpradioplayer.ui.player.PlayerViewModel = koinViewModel()
+    LaunchedEffect(uiState.stations) {
+        playerViewModel.setStationList(uiState.stations)
+    }
+
     val listState = rememberLazyListState()
 
     val shouldLoadMore = remember {
@@ -161,7 +170,8 @@ fun StationsScreen(
                 key = { it.stationUuid }
             ) { station ->
                 Card(
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    onClick = { onStationClick(station) }
                 ) {
                     Row(
                         modifier = Modifier
