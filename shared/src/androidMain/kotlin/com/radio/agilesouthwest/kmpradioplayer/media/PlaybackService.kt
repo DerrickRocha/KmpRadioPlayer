@@ -132,14 +132,6 @@ class PlaybackService : MediaSessionService() {
         )
     }
 
-    /* private fun onNowPlaying(rawTitle: String) {
-         val parsed = parseStreamTitle(rawTitle)
-         if (parsed != _nowPlaying.value) {   // ignore repeats
-             _nowPlaying.value = parsed
-             // trigger the lyrics lookup here, or collect nowPlaying elsewhere
-         }
-     }*/
-
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? =
         mediaSession
 
