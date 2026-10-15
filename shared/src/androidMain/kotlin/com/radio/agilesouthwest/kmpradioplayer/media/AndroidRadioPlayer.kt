@@ -3,9 +3,11 @@ package com.radio.agilesouthwest.kmpradioplayer.media
 import android.content.ComponentName
 import android.content.Context
 import android.net.Uri
+import android.os.Bundle
 import androidx.annotation.OptIn
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
+import androidx.media3.common.Metadata
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.MediaController
@@ -13,6 +15,9 @@ import androidx.media3.session.SessionToken
 import com.radio.agilesouthwest.kmpradioplayer.data.network.models.NetworkRadioStation
 import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.MoreExecutors
+import com.radio.agilesouthwest.kmpradioplayer.KEY_ALBUM
+import com.radio.agilesouthwest.kmpradioplayer.KEY_ARTIST
+import com.radio.agilesouthwest.kmpradioplayer.KEY_TITLE
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -41,17 +46,32 @@ class AndroidRadioPlayer(private val context: Context) : RadioPlayer {
 
     private fun initializeController() {
         val sessionToken = SessionToken(context, ComponentName(context, PlaybackService::class.java))
-        controllerFuture = MediaController.Builder(context, sessionToken).buildAsync()
+        controllerFuture = MediaController
+            .Builder(context, sessionToken)
+            .setListener(object : MediaController.Listener {
+                override fun onExtrasChanged(controller: MediaController, extras: Bundle) {
+                    publishNowPlaying(extras)
+                }
+            })
+            .buildAsync()
         controllerFuture?.addListener({
             try {
                 val controller = controllerFuture?.get() ?: return@addListener
                 setupControllerListener(controller)
                 // Sync initial state
+                publishNowPlaying(controller.sessionExtras)
                 updatePlaybackState(controller)
             } catch (e: Exception) {
                 _state.update { it.copy(error = "Failed to connect to playback service: ${e.message}") }
             }
         }, MoreExecutors.directExecutor())
+    }
+
+    private fun publishNowPlaying(extras: Bundle) {
+        val title = extras.getString(KEY_TITLE)
+        val artist = extras.getString(KEY_ARTIST)
+        val album = extras.getString(KEY_ALBUM)
+        _state.update { it.copy(nowPlaying = NowPlaying(artist, title?: "Unknown", album)) }
     }
 
     private fun setupControllerListener(controller: MediaController) {

@@ -10,8 +10,11 @@ data class PlaybackState(
     val currentPosition: Long = 0L,
     val duration: Long = 0L,
     val isSeekable: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    val nowPlaying: NowPlaying? = null
 )
+
+data class NowPlaying(val artist: String?, val track: String, val album: String?)
 
 interface RadioPlayer : AutoCloseable {
     val state: StateFlow<PlaybackState>
