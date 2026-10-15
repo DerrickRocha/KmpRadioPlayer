@@ -85,15 +85,15 @@ class PlaybackService : MediaSessionService() {
             private fun buildTextInformationFrameBundle(entry: TextInformationFrame): Bundle {
                 val song = when(entry.id) {
                     "TIT2" -> entry.value
-                    else -> "Unknown"
+                    else -> null
                 }
                 val artist = when(entry.id) {
                     "TPE2", "TIT1" -> entry.value
-                    else -> "Unknown"
+                    else -> null
                 }
                 val album = when(entry.id) {
                     "TALB", "TCON" -> entry.value
-                    else -> "Unknown"
+                    else -> null
                 }
                 return bundleOf(
                     KEY_ARTIST to artist,

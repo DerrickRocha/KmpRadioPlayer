@@ -42,12 +42,12 @@ fun PlayerSheetContent(
         Spacer(modifier = Modifier.height(32.dp))
 
         Text(
-            text = station.name,
+            text = state.nowPlaying?.artist?: state.nowPlaying?.album?: station.name,
             style = MaterialTheme.typography.headlineMedium,
             maxLines = 1
         )
         Text(
-            text = station.tags ?: "",
+            text = state.nowPlaying?.track?: station.tags ?: "",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 1

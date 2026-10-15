@@ -71,7 +71,12 @@ class AndroidRadioPlayer(private val context: Context) : RadioPlayer {
         val title = extras.getString(KEY_TITLE)
         val artist = extras.getString(KEY_ARTIST)
         val album = extras.getString(KEY_ALBUM)
-        _state.update { it.copy(nowPlaying = NowPlaying(artist, title?: "Unknown", album)) }
+        _state.update { it.copy(nowPlaying = if (title != null) NowPlaying(artist, title, album) else null) }
+        /*_state.update { it.copy(nowPlaying = it.nowPlaying?.copy(
+            artist = artist,
+            track = title,
+            album = album
+        )) }*/
     }
 
     private fun setupControllerListener(controller: MediaController) {
