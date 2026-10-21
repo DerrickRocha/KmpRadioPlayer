@@ -45,7 +45,8 @@ class AndroidRadioPlayer(private val context: Context) : RadioPlayer {
     }
 
     private fun initializeController() {
-        val sessionToken = SessionToken(context, ComponentName(context, PlaybackService::class.java))
+        val sessionToken =
+            SessionToken(context, ComponentName(context, PlaybackService::class.java))
         controllerFuture = MediaController
             .Builder(context, sessionToken)
             .setListener(object : MediaController.Listener {
@@ -69,9 +70,36 @@ class AndroidRadioPlayer(private val context: Context) : RadioPlayer {
 
     private fun publishNowPlaying(extras: Bundle) {
         val title = extras.getString(KEY_TITLE)
+
+        title?.let {
+            _state.update {
+                val nowPlaying = it.nowPlaying?.copy(track = title) ?: NowPlaying(
+                    artist = null,
+                    track = title,
+                    album = null
+                )
+                it.copy(nowPlaying = nowPlaying)
+            }
+        }
         val artist = extras.getString(KEY_ARTIST)
+        artist?.let {
+            _state.update {
+                val nowPlaying =
+                    it.nowPlaying?.copy(artist = artist) ?: NowPlaying(artist = artist, null, null)
+                it.copy(nowPlaying = nowPlaying)
+            }
+        }
         val album = extras.getString(KEY_ALBUM)
-        _state.update { it.copy(nowPlaying = if (title != null) NowPlaying(artist, title, album) else null) }
+        album?.let {
+            _state.update {
+                val nowPlaying = it.nowPlaying?.copy(album = album) ?: NowPlaying(
+                    artist = null,
+                    track = null,
+                    album = album
+                )
+                it.copy(nowPlaying = nowPlaying)
+            }
+        }
         /*_state.update { it.copy(nowPlaying = it.nowPlaying?.copy(
             artist = artist,
             track = title,
@@ -96,6 +124,7 @@ class AndroidRadioPlayer(private val context: Context) : RadioPlayer {
                     // Note: We don't have the full NetworkRadioStation object here easily,
                     // but we can update the title/tags at least if needed.
                 }
+                _state.update { it.copy(nowPlaying = null) }
             }
 
             override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
@@ -105,12 +134,12 @@ class AndroidRadioPlayer(private val context: Context) : RadioPlayer {
     }
 
     private fun updatePlaybackState(player: Player) {
-        _state.update { 
+        _state.update {
             it.copy(
                 isLoading = player.playbackState == Player.STATE_BUFFERING,
                 duration = if (player.duration > 0) player.duration else 0L,
                 isSeekable = !player.isCurrentMediaItemLive || player.isCurrentMediaItemSeekable
-            ) 
+            )
         }
     }
 
@@ -122,19 +151,19 @@ class AndroidRadioPlayer(private val context: Context) : RadioPlayer {
         }
 
         _state.update { it.copy(currentStation = station, error = null) }
-        
+
         val metadata = MediaMetadata.Builder()
             .setTitle(station.name)
             .setArtist(station.tags)
             .setArtworkUri(station.favicon?.let { Uri.parse(it) })
             .build()
-            
+
         val mediaItem = MediaItem.Builder()
             .setMediaId(station.stationUuid)
             .setUri(station.urlResolved)
             .setMediaMetadata(metadata)
             .build()
-            
+
         controller.setMediaItem(mediaItem)
         controller.prepare()
         controller.play()
